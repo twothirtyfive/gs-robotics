@@ -16,10 +16,11 @@ en_debug=1
 DPR = 360.0/64
 WHEEL_RAD = 3.25 # Wheels are ~6.5 cm diameter.
 CHASS_WID = 13.5 # Chassis is ~13.5 cm wide.
+VAR = 1.0
 
 def turn(direction, degrees):
     #this function allows GPG to turn in place
-    SLP = 0.8 * (degrees/90)
+    SLP = VAR * (degrees/90)
     if SLP < 0:
         raise SystemExit
     set_speed(80)
@@ -34,9 +35,13 @@ def turn(direction, degrees):
     return
 
 def move_until(distance_away):
-    set_speed(200)
     servo(90)
+    while us_dist(15) > (3 * distance_away):
+        set_speed(200)
+        fwd()
+        time.sleep(0.02)
     while us_dist(15) > distance_away:
+        set_speed(100)
         fwd()
         time.sleep(0.02)
     stop()

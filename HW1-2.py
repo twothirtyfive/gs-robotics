@@ -6,7 +6,7 @@ counter = 0
 SLP = 0.5
 
 while (counter < 41):
-    num = randint(0,5)
+    num = randint(0,6)
     print num
     if num == 0:
         fwd()
@@ -36,3 +36,12 @@ while (counter < 41):
         servo(90)
         time.sleep(SLP)
         counter += 3
+    elif num == 6:
+        for y in range(0,2):
+            led_on(1)
+            led_on(0)
+            time.sleep(0.25)
+            led_off(1)
+            led_off(0)
+            time.sleep(0.25)
+        counter += 2
