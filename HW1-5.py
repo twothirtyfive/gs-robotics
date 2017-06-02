@@ -1,23 +1,22 @@
 from gopigo import *
 from control import *
-import time, math
+from time import sleep
+from math import ceil
 
-#speed range from 0-255, default 200
-set_speed(50)
+#speed range from 0-255
+set_speed(60)
 
 def angle_finder(input):
     if input == []:
         return -1
     angles = []
-    print input
     for a, b in input:
-        print b
         angles.append(b)
-    print angles
-    min_angle = min(angles)
-    max_angle = max(angles)
-    angle = (min_angle + max_angle)/2.0
-    print angle
+    angles.sort()
+    if len(angles) > 2:
+        angles.pop(0)
+        angles.pop(-1)
+    angle = sum(angles)/len(angles)
     return angle
 
 def avg_us_dist():
@@ -42,13 +41,18 @@ def us_search(type):
                 if angle == 180:
                     angle = 179
                 servo(angle)
-                time.sleep(0.15)
+                time.sleep(0.3)
                 dist = avg_us_dist()
-                dlist.append((dist, angle + (count * 90)))
+                corrected_angle = angle
+                if angle + (count * 90) >= 360:
+                    corrected_angle = angle + (count * 90) - 360
+                dlist.append((dist, corrected_angle))
             turn('left', 90)
         print dlist
         for a, b in dlist:
-            if 80 <= a <= 120:
+            if a <= 120:
+                print "angle: %s" %b
+                print "distance: %s" %a
                 ndlist.append((a,b))
         print ndlist
         return ndlist
@@ -61,11 +65,11 @@ def us_search(type):
         for x in range(0, 18):
             angle = 45 + (5*x)
             servo(angle)
-            time.sleep(0.15)
+            time.sleep(0.3)
             temp = avg_us_dist()
             tmplist.append((temp, angle))
         for a, b in tmplist:
-                if 80 <= a <= 120:
+                if a <= 120:
                     alist.append((a, b))
         return angle_finder(alist)
 
@@ -80,13 +84,14 @@ def us_search(type):
             if angle == 180:
                 angle = 179
             servo(angle)
-            time.sleep(0.15)
+            time.sleep(0.3)
             dist = avg_us_dist()
             dlist.append((dist, angle))
         for a, b in dlist:
             if a <= 120:
                 alist.append((a, b))
         return angle_finder(alist)
+
 def corrected_turn(angle):
     if angle <= 90:
         turn('right', 90 - angle)
@@ -95,21 +100,27 @@ def corrected_turn(angle):
     else:
         turn('left', angle - 90)
 
-
 def main():
+    print "Commencing rough search."
     object_list = us_search(0)
     angle = angle_finder(object_list)
     print angle
+    raw_input("next...")
     corrected_turn(angle)
     angle = us_search(2)
+    if angle == -1:
+        print "Object is not where it is expected to be. Commencing backup search method."
     while angle == -1:
-        turn('left', 45)
+        if(angle != -1):
+            break
+        print "angle is -1"
+        turn('right', 90)
         angle = us_search(2)
     corrected_turn(angle)
+    print "Commencing fine search."
     angle = us_search(1)
-    print angle
     corrected_turn(angle)
+    print "Approaching target."
     move_until(20)
-
 
 main()
