@@ -10,11 +10,11 @@ REPEAT=2
 DELAY=.2
 
 def main():
-    # #print "*** Starting Find Hole Example ***"
+    print "*** Starting Find Hole Example ***"
     servo(1)
     time.sleep(0.2)
     starting = findstarting()
-    # #print "Starting Angle: {}".format(starting)
+    print "Starting Angle: {}".format(starting)
     diff = angle_diff(starting)
     print "Angle of Cone: {}".format(diff)
     servo(90)
@@ -26,20 +26,20 @@ def findstarting():
     inc = 5
     found = False
     starting = 0
-    #print "Scanning room in {} degree increments".format(inc)
+    print "Scanning room in {} degree increments".format(inc)
     for ang in range(70,120,inc):
-        #print "  Setting angle to {} ... ".format(ang)
+        print "  Setting angle to {} ... ".format(ang)
         servo(ang)
         buf=[]
         for i in range(SAMPLES):
             dist=us_dist(15)
-            #print dist
+            print dist
             if dist<100 and dist>=0:
                 buf.append(dist)
             else:
                 buf.append(INF)
         ave = math.fsum(buf)/len(buf)
-        #print "ave" + str(ave)
+        print "ave" + str(ave)
 
         if ave<100 and ave>=0:
             found = True
@@ -55,19 +55,19 @@ def angle_diff(starting):
     mx = 0
     mn = 0
     while shallow:
-        #print "  Setting angle to {} ... ".format(ang)
+        print "  Setting angle to {} ... ".format(ang)
         servo(ang)
         frame = False
         buf = []
         for i in range(SAMPLES):
             dist=us_dist(15)
-            #print dist
+            print dist
             if dist<100 and dist>=0:
                 buf.append(dist)
             else:
                 buf.append(INF)
         ave = math.fsum(buf)/len(buf)
-        #print "ave" + str(ave)
+        print "ave" + str(ave)
 
         if ave<100 and ave>=0:
             frame = True
@@ -80,19 +80,19 @@ def angle_diff(starting):
             ang = starting - 1
         time.sleep(DELAY)
     while neg:
-        #print "  Setting angle to {} ... ".format(ang)
+        print "  Setting angle to {} ... ".format(ang)
         servo(ang)
         frame = False
         buf = []
         for i in range(SAMPLES):
             dist=us_dist(15)
-            #print dist
+            print dist
             if dist<100 and dist>=0:
                 buf.append(dist)
             else:
                 buf.append(INF)
         ave = math.fsum(buf)/len(buf)
-        #print "ave" + str(ave)
+        print "ave" + str(ave)
 
         if ave<100 and ave>=0:
             frame = True
