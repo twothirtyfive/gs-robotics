@@ -72,11 +72,11 @@ def main():
 
 def my_turn():
     servo(80)
-    ldist = avg_us_dist()
+    rdist = avg_us_dist()
     servo(90)
     mdist = avg_us_dist()
     servo(100)
-    rdist = avg_us_dist()
+    ldist = avg_us_dist()
     if ldist > mdist and rdist > mdist:
         deg = 90
     else:
