@@ -46,28 +46,34 @@ INF=200 # Distance, in cm, to be considered infinity.
 REPEAT=2
 DELAY=.02
 
+inline = False
+abreast = False
+
 def main():
     print "*** Starting BUG2 Example ***"
+    start_left = enc_read(0)
+    start_right = enc_read(1)
     move_until(5)
 
-    left_enc = enc_read(0)
-    right_enc = enc_read(1)
-
+    delta_left_enc = enc_read(0) - start_left
+    delta_right_enc = enc_read(1) - start_right
+    print delta_left_enc
+    print delta_right_enc
     my_turn()
 
 
-    for x in range(REPEAT):
-        move(STOP_DIST)
-        readings = scan_room()
-        holes = findholes(readings)
-        gaps = verify_holes(holes)
-        if len(gaps) == 0:
-            print "Nowhere to go!!"
-            stop()
-            exit()
-        ## Choose the first gap found
-        turn_to(gaps[0][0])
-    servo(90)
+    # for x in range(REPEAT):
+    #     move(STOP_DIST)
+    #     readings = scan_room()
+    #     holes = findholes(readings)
+    #     gaps = verify_holes(holes)
+    #     if len(gaps) == 0:
+    #         print "Nowhere to go!!"
+    #         stop()
+    #         exit()
+    #     ## Choose the first gap found
+    #     turn_to(gaps[0][0])
+    # servo(90)
     stop()
 
 def my_turn():
