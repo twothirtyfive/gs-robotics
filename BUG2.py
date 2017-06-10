@@ -47,7 +47,15 @@ REPEAT=2
 DELAY=.02
 
 def main():
-    print "*** Starting Find Hole Example ***"
+    print "*** Starting BUG2 Example ***"
+    move_until(5)
+
+    left_enc = enc_read(0)
+    right_enc = enc_read(1)
+
+    my_turn()
+
+
     for x in range(REPEAT):
         move(STOP_DIST)
         readings = scan_room()
@@ -61,6 +69,22 @@ def main():
         turn_to(gaps[0][0])
     servo(90)
     stop()
+
+def my_turn():
+    servo(80)
+    ldist = avg_us_dist()
+    servo(90)
+    mdist = avg_us_dist()
+    servo(100)
+    rdist = avg_us_dist()
+    if ldist > mdist and rdist > mdist:
+        deg = 90
+    else:
+        a = math.sqrt(ldist^2 + rdist^2 - 2*ldist*rdist*math.cos(20))
+        beta = math.degrees(math.asin(ldist*math.sin(20)/a))
+        deg = 180-beta
+
+    turn('left',deg)
 
 def move(min_dist):
     ## Set servo to point straight ahead
