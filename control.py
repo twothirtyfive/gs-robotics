@@ -67,6 +67,22 @@ def avg_us_dist():
     avg = sum(dlist)/len(dlist)
     return avg
 
+def dream_team_us_dist(pin):
+    '''
+    based on lab experiments, the US sensor has to be corrected
+    with the following equation:
+        (x+4.41)/1.423
+    This seems to give the best results for the sensors on hand
+    '''
+    raw_data = float(us_dist(pin))
+
+    if raw_data > 0:
+        corrected_data = (raw_data + 4.41)  / 1.423
+    else:
+        corrected_data = raw_data
+    # print(raw_data,corrected_data)
+    return corrected_data
+
 def move_until(distance_away):
     servo(90)
     setspeed(60)

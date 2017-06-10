@@ -46,21 +46,25 @@ INF=200 # Distance, in cm, to be considered infinity.
 REPEAT=2
 DELAY=.02
 
-inline = False
+inline = True
 abreast = False
 
 def main():
     print "*** Starting BUG2 Example ***"
+    servo(90)
+    d = avg_us_dist()
+    d = d - 5
     start_left = enc_read(0)
     start_right = enc_read(1)
-    move_until(5)
-
+    #move_until(5)
+    fwd(d)
     delta_left_enc = enc_read(0) - start_left
     delta_right_enc = enc_read(1) - start_right
     print delta_left_enc
     print delta_right_enc
-    my_turn()
+    ang = my_turn()
 
+    obstacle()
 
     # for x in range(REPEAT):
     #     move(STOP_DIST)
@@ -76,6 +80,24 @@ def main():
     # servo(90)
     stop()
 
+def obstacle():
+    abreast = True
+    inline = False
+    servo(1)
+    d = dream_team_us_dist(15)
+    servo(45)
+    h = dream_team_us_dist(15)
+    currentD = h
+    print h
+    fwd()
+    while currentD <= h+5:
+        time.sleep(0.2)
+        currentD = dream_team_us_dist(15)
+    stop()
+    a = math.sqrt(h^2.0 - d^2.0)
+    fwd(a)
+    turn('right',90)
+
 def my_turn():
     servo(80)
     rdist = avg_us_dist()
@@ -86,7 +108,7 @@ def my_turn():
     if ldist > mdist and rdist > mdist:
         deg = 90
     else:
-        a = math.sqrt(ldist^2 + rdist^2 - 2*ldist*rdist*math.cos(20))
+        a = math.sqrt(ldist^2.0 + rdist^2.0 - 2.0*ldist*rdist*math.cos(20))
         beta = math.degrees(math.asin(ldist*math.sin(20)/a))
         deg = 180-beta
 
