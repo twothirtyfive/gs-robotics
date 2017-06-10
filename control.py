@@ -69,11 +69,7 @@ def avg_us_dist():
 
 def move_until(distance_away):
     servo(90)
-    set_speed(150)
-    while avg_us_dist() > (3 * distance_away):
-        fwd()
-        time.sleep(0.05)
-    set_speed(75)
+    setspeed(60)
     while avg_us_dist() > distance_away:
         fwd()
         time.sleep(0.05)
