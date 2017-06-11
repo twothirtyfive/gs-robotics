@@ -64,7 +64,7 @@ def avg_us_dist():
         print dist
         dlist.append(dist)
         time.sleep(0.2)
-    avg = sum(dlist)/len(dlist)
+    avg = (sum(dlist)*1.0)/(len(dlist)*1.0)
     return avg
 
 def dream_team_us_dist(pin):
