@@ -67,14 +67,14 @@ def avg_us_dist():
     avg = (sum(dlist)*1.0)/(len(dlist)*1.0)
     return avg
 
-def dream_team_us_dist(pin):
+def dream_team_us_dist():
     '''
     based on lab experiments, the US sensor has to be corrected
     with the following equation:
         (x+4.41)/1.423
     This seems to give the best results for the sensors on hand
     '''
-    raw_data = float(us_dist(pin))
+    raw_data = float(us_dist(15))
 
     if raw_data > 0:
         corrected_data = (raw_data + 4.41)  / 1.423
