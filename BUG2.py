@@ -48,23 +48,34 @@ DELAY=.02
 
 inline = True
 abreast = False
+goal = 200
+toGoal = 0
+atGoal = False
+compass = 0
 
 def main():
     print "*** Starting BUG2 Example ***"
     servo(90)
-    d = avg_us_dist()
-    d = d - 5
-    start_left = enc_read(0)
-    start_right = enc_read(1)
-    #move_until(5)
-    fwd(d)
-    delta_left_enc = enc_read(0) - start_left
-    delta_right_enc = enc_read(1) - start_right
-    print delta_left_enc
-    print delta_right_enc
-    ang = my_turn()
 
-    obstacle()
+    while not atGoal:
+        d = dream_team_us_dist()
+        d = d - 5
+        start_left = enc_read(0)
+        start_right = enc_read(1)
+        if d+toGoal<=goal:
+            fwd(goal)
+            atGoal = True
+            break
+        move_until(d)
+        toGoal += d
+        delta_left_enc = enc_read(0) - start_left
+        delta_right_enc = enc_read(1) - start_right
+        print delta_left_enc
+        print delta_right_enc
+        ang = my_turn()
+        compass += ang
+        inline = False
+        obstacle()
 
     # for x in range(REPEAT):
     #     move(STOP_DIST)
@@ -82,29 +93,38 @@ def main():
 
 def obstacle():
     abreast = True
-    inline = False
-    servo(1)
-    d = dream_team_us_dist(15)
-    servo(45)
-    h = dream_team_us_dist(15)
-    currentD = h
-    print h
-    fwd()
-    while currentD <= h+5:
-        time.sleep(0.2)
-        currentD = dream_team_us_dist(15)
-    stop()
-    a = math.sqrt(h^2.0 - d^2.0)
-    fwd(a)
-    turn('right',90)
+    while abreast:
+        servo(1)
+        d = dream_team_us_dist()
+        servo(45)
+        h = dream_team_us_dist()
+        currentD = h
+        print h
+        fwd()
+        while currentD <= h+5 and currentD >= h-5:
+            time.sleep(0.2)
+            currentD = dream_team_us_dist()
+        stop()
+        servo(90)
+        currentD = dream_team_us_dist()
+        a = math.sqrt(h^2.0 - d^2.0) + 5
+        if currentD > a +5:
+            fwd(a)
+            turn('right',90)
+            ang = my_adjust()
+            compass -= ang
+        else:
+            ang = my_turn()
+            compass += ang
+
 
 def my_turn():
     servo(80)
-    rdist = avg_us_dist()
+    rdist = dream_team_us_dist()
     servo(90)
-    mdist = avg_us_dist()
+    mdist = dream_team_us_dist()
     servo(100)
-    ldist = avg_us_dist()
+    ldist = dream_team_us_dist()
     if ldist > mdist and rdist > mdist:
         deg = 90
     else:
@@ -113,6 +133,24 @@ def my_turn():
         deg = 180-beta
 
     turn('left',deg)
+    return deg
+
+def my_adjust():
+    servo(30)
+    rdist = dream_team_us_dist()
+    servo(60)
+    ldist = dream_team_us_dist()
+    a = math.sqrt(ldist^2.0 + rdist^2.0 - 2.0*ldist*rdist*math.cos(20))
+    beta = math.degrees(math.asin(ldist*math.sin(20)/a))
+    deg = 120-beta
+    if deg > 0:
+        turn('right',deg)
+    else:
+        deg *= -1
+        turn('left',deg)
+        deg *= -1
+    deg += 90
+    return deg
 
 def move(min_dist):
     ## Set servo to point straight ahead
