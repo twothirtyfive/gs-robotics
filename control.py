@@ -20,6 +20,14 @@ WHEEL_RAD = 3.25 # Wheels are ~6.5 cm diameter.
 CHASS_WID = 13.5 # Chassis is ~13.5 cm wide.
 VAR = 1.0
 
+def c_servo(angle):
+    if angle <= 10:
+        angle = 1
+    else:
+        angle -= 10
+    servo(angle)
+    time.sleep(.2)
+
 #left encoder, right encoder, # of encoders, fwd/bwd
 def g_enc_tgt(direction, distance):
     x = 60
@@ -86,7 +94,7 @@ def dream_team_us_dist():
 def move_until(distance_away):
     servo(90)
     setspeed(60)
-    while avg_us_dist() > distance_away:
+    while dream_team_us_dist() > distance_away:
         fwd()
         time.sleep(0.05)
     stop()
