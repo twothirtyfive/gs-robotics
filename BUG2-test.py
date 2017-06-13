@@ -312,7 +312,7 @@ def check_plot(plot):
     for pos,orient in mov_table:
         print pos
         x,y = pos
-        if (x - .1 <= cx <= x + .1) and (y - .1 <= cy <= y + .1):
+        if (x - .005 <= cx <= x + .005) and (y - .005 <= cy <= y + .005):
             return 0
     return 1
 
