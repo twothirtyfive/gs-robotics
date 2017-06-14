@@ -55,11 +55,11 @@ def turn(direction, degrees):
     if direction == 'left':
         enc_tgt(1, 1, int(math.ceil(conv_enc)))
         left_rot()
-        time.sleep(conv_enc/5)
+        time.sleep(conv_enc/3)
     elif direction == 'right':
         enc_tgt(1, 1, int(math.ceil(conv_enc)))
         right_rot()
-        time.sleep(conv_enc/5)
+        time.sleep(conv_enc/3)
     else:
         print "invalid direction"
         raise SystemExit
