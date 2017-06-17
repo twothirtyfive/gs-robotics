@@ -65,8 +65,9 @@ class Obstacle:
         temp_table = []
         v_num = len(self.vertices)
         v = list(self.vertices)
-        for i in v:
-            while v_num > 1 and (self.ccw(v[-2], v[-1], i) >= 0):
+        M = 1
+        for i in range(2,v_num):
+            while (self.ccw(v[-2], v[-1], i) <= 0:
                 v.pop(v.index(1))
             temp_table.append(i)
         print temp_table
