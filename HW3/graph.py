@@ -74,10 +74,26 @@ class Obstacle:
         temp_table = []
         v_num = len(self.vertices)
         v = list(self.vertices)
-        for i in v:
-            while v_num > 1 and (self.ccw(v[-2], v[-1], i) >= 0):
-                v.pop(v.index(i))
-            temp_table.append(i)
+        print v
+        last = v[-1]
+        v.insert(0,last)
+        M = 1
+        for i in range(2,v_num):
+            while self.ccw(v[M-1], v[M], v[i]) < 0:
+                if M > 1:
+                    M -= 1
+                    continue
+                elif i is v_num:
+                    break
+                else:
+                    i += 1
+            M += 1
+            tmp = v[M]
+            v[M] = v[i]
+            v[i] = tmp
+            print i,": ",v
+        print M
+        temp_table = v[0:M-1]
         print temp_table
         print len(temp_table)
 
@@ -170,6 +186,7 @@ def main():
 
     for a in range(0,len(obstacle_table)):
         obstacle_table[a].draw_obstacles()
+
     # obstacle_table[0].o_print()
     plt.show()
     # obstacle_table[0].graham_scan()
