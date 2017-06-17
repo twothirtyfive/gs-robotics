@@ -6,13 +6,17 @@ R_DIM = (10,10) #example, robot that is 10cm x 10cm
 
 class Obstacle:
     v_num = 0
+    old_vertices = []
     vertices = []
     grown = False
+    name = None
 
-    def __init__(self, v_num, vertices, grown):
+    def __init__(self, v_num, old_vertices, vertices, grown, name):
         self.v_num = v_num
+        self.old_vertices = old_vertices
         self.vertices = vertices
         self.grown = False
+        self.name = name
 
     def grow(self):
         for a in range(0, self.v_num):
@@ -39,6 +43,8 @@ class Obstacle:
             ang_table.append([ang, v[i]])
         temp_pos = []
         temp_neg = []
+        # for a,b in ang_table:
+        #     if
         for a,b in ang_table:
             if a>= 0:
                 temp_pos.append([a,b])
@@ -98,52 +104,74 @@ class Obstacle:
         # print len(v)
         # print v
 
+    def draw_obstacles(self):
+        #draw original obstacles
+        temp_x = []
+        temp_y = []
+        for x,y in self.old_vertices:
+            temp_x.append(x)
+            temp_y.append(y)
+        print temp_x
+        print temp_y
+        plt.plot(temp_x, temp_y, color='black', lw=1)
+        plt.plot([temp_x[0], temp_x[-1]], [temp_y[0], temp_y[-1]], color='black', lw=1)
+
+        #draw grown obstacles
 
 
+def setup_env(input_table):
+    start_coord = input_table.pop(0)
+    goal_coord = input_table.pop(0)
+    env_coord = input_table.pop(0)
+    plt.plot(start_coord[0], start_coord[1], marker='o', color='b')
+    plt.text(start_coord[0], start_coord[1], 'start')
+    plt.plot(goal_coord[0], goal_coord[1], marker='o', color ='r')
+    plt.text(goal_coord[0], goal_coord[1], 'goal')
+    plt.plot([0, env_coord[0], env_coord[0], 0], [0, 0, env_coord[1], env_coord[1]], color='g', lw=2)
 
 def main():
-    test_obs = Obstacle(4, [[0,0], [0,10], [10,0], [10,10]], False)
-    test_obs.grow()
-    test_obs.sort()
+    # test_obs = Obstacle(4, [[0,0], [0,10], [10,0], [10,10]], False)
+    # test_obs.grow()
+    # test_obs.sort()
     # test_obs.graham_scan()
-    test_obs.o_print()
+    # test_obs.o_print()
 
-    # input_table = []
-    # obstacle_table = []
-    # input_file = sys.argv[1]
-    #
-    # with open(input_file, 'r') as fp:
-    #     parsed_input = fp.readlines()
-    #
-    # fp.close()
-    #
-    # parsed_input = [x.strip() for x in parsed_input]
-    # for x in parsed_input:
-    #     x = map(float, x.split())
-    #     input_table.append(x)
+    input_table = []
+    obstacle_table = []
+    input_file = sys.argv[1]
 
-    # start_coord = input_table.pop(0)
-    # goal_coord = input_table.pop(0)
-    # env_coord = input_table.pop(0)
-    # plt.plot(start_coord[0], start_coord[1], )
-    # plt.show()
-    #
-    # num_of_obstacles = int(input_table[0][0])
-    # input_table.pop(0)
-    #
-    # for a in range(0, num_of_obstacles):
-    #     temp_table = []
-    #     num_of_vertices = int(input_table[0][0])
-    #     input_table.pop(0)
-    #
-    #     for b in range(0, num_of_vertices):
-    #         temp = input_table.pop(0)
-    #         temp_table.append(temp)
-    #     obstacle_table.append(Obstacle(num_of_vertices, temp_table, False))
-    #     obstacle_table[a].grow()
-    #     obstacle_table[a].sort()
-    #     temp_table = []
+    with open(input_file, 'r') as fp:
+        parsed_input = fp.readlines()
+
+    fp.close()
+
+    parsed_input = [x.strip() for x in parsed_input]
+    for x in parsed_input:
+        x = map(float, x.split())
+        input_table.append(x)
+
+    setup_env(input_table)
+
+    num_of_obstacles = int(input_table[0][0])
+    input_table.pop(0)
+
+    for a in range(0, num_of_obstacles):
+        temp_table = []
+        num_of_vertices = int(input_table[0][0])
+        input_table.pop(0)
+
+        for b in range(0, num_of_vertices):
+            temp = input_table.pop(0)
+            temp_table.append(temp)
+        obstacle_table.append(Obstacle(num_of_vertices, list(temp_table), temp_table, False, a))
+        obstacle_table[a].grow()
+        obstacle_table[a].sort()
+    temp_table = []
+
+    for a in range(0,len(obstacle_table)):
+        obstacle_table[a].draw_obstacles()
     # obstacle_table[0].o_print()
+    plt.show()
     # obstacle_table[0].graham_scan()
 
 
