@@ -44,6 +44,9 @@ class Obstacle:
                 temp_pos.append([a,b])
             else:
                 temp_neg.append([a,b])
+        temp_pos.sort(key=lambda x: (x[0]))
+        temp_neg.sort(key=lambda x: (x[0]))
+
         reversed(temp_neg)
         temp_pos.extend(temp_neg)
 
@@ -65,11 +68,26 @@ class Obstacle:
         temp_table = []
         v_num = len(self.vertices)
         v = list(self.vertices)
+        print v
+        last = v[-1]
+        v.insert(0,last)
         M = 1
         for i in range(2,v_num):
-            while (self.ccw(v[-2], v[-1], i) <= 0:
-                v.pop(v.index(1))
-            temp_table.append(i)
+            while self.ccw(v[M-1], v[M], v[i]) < 0:
+                if M > 1:
+                    M -= 1
+                    continue
+                elif i is v_num:
+                    break
+                else:
+                    i += 1
+            M += 1
+            tmp = v[M]
+            v[M] = v[i]
+            v[i] = tmp
+            print i,": ",v
+        print M
+        temp_table = v[0:M-1]
         print temp_table
         print len(temp_table)
 
@@ -104,7 +122,7 @@ def main():
     test_obs.grow()
     test_obs.sort()
     test_obs.graham_scan()
-    # test_obs.o_print()
+    test_obs.o_print()
 
     # input_table = []
     # obstacle_table = []
@@ -119,10 +137,13 @@ def main():
     # for x in parsed_input:
     #     x = map(float, x.split())
     #     input_table.append(x)
-    #
+
     # start_coord = input_table.pop(0)
     # goal_coord = input_table.pop(0)
     # env_coord = input_table.pop(0)
+    # plt.plot(start_coord[0], start_coord[1], )
+    # plt.show()
+    #
     # num_of_obstacles = int(input_table[0][0])
     # input_table.pop(0)
     #
