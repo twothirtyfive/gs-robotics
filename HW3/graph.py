@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import sys, math
 from string import split
 
-R_DIM = (10,10) #example, robot that is 10cm x 10cm
-
+R_DIM = (14,23) #example, robot that is 10cm x 10cm
+Starting_orientation = 45
 class Obstacle:
     v_num = 0
     old_vertices = []
@@ -21,9 +21,9 @@ class Obstacle:
     def grow(self):
         for a in range(0, self.v_num):
             x,y = self.vertices[a]
-            self.vertices.append([x+R_DIM[0], y+R_DIM[1]])
-            self.vertices.append([x+R_DIM[0], y])
-            self.vertices.append([x, y+R_DIM[1]])
+            self.vertices.append([x-math.cos(45)*R_DIM[0], y+math.cos(45)*R_DIM[0]])
+            self.vertices.append([x+math.cos(45)*R_DIM[1], y+math.cos(45)*R_DIM[1]])
+            self.vertices.append([x-math.cos(45)*R_DIM[0]+math.cos(45)*R_DIM[1], y+math.cos(45)*R_DIM[1]+math.cos(45)*R_DIM[0]])
         self.grown = True
 
     def sort(self):
@@ -133,6 +133,22 @@ def setup_env(input_table):
     plt.plot(goal_coord[0], goal_coord[1], marker='o', color ='r')
     plt.text(goal_coord[0], goal_coord[1], 'goal')
     plt.plot([0, env_coord[0], env_coord[0], 0], [0, 0, env_coord[1], env_coord[1]], color='g', lw=2)
+    draw_rover(start_coord)
+
+def draw_rover(Starting_pos):
+    temp_x = []
+    temp_y = []
+    temp_x.append(Starting_pos[0])
+    temp_y.append(Starting_pos[1])
+    temp_x.append(Starting_pos[0]+math.cos(45)*R_DIM[0])
+    temp_y.append(Starting_pos[1]-math.cos(45)*R_DIM[0])
+    temp_x.append(Starting_pos[0]+math.cos(45)*R_DIM[0]-math.cos(45)*R_DIM[1])
+    temp_y.append(Starting_pos[1]-math.cos(45)*R_DIM[1]-math.cos(45)*R_DIM[0])
+    temp_x.append(Starting_pos[0]-math.cos(45)*R_DIM[1])
+    temp_y.append(Starting_pos[1]-math.cos(45)*R_DIM[1])
+    plt.plot(temp_x, temp_y, color='black', lw=1)
+    plt.plot([temp_x[0], temp_x[-1]], [temp_y[0], temp_y[-1]], color='black', lw=1)
+    
 
 def main():
     # test_obs = Obstacle(4, [[0,0], [0,10], [10,0], [10,10]], False)
