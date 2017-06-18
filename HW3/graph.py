@@ -74,12 +74,11 @@ class Obstacle:
         temp_table = []
         v_num = len(self.vertices)
         v = list(self.vertices)
-        print v
         last = v[-1]
         v.insert(0,last)
         M = 1
-        for i in range(2,v_num):
-            while self.ccw(v[M-1], v[M], v[i]) < 0:
+        for i in range(2,v_num+1):
+            while self.ccw(v[M-1], v[M], v[i]) <= 0:
                 if M > 1:
                     M -= 1
                     continue
@@ -91,9 +90,11 @@ class Obstacle:
             tmp = v[M]
             v[M] = v[i]
             v[i] = tmp
-            # print i,": ",v
+            temp = v
+
+            print i,": ",v
         print M
-        self.convex_hull = v[0:M-1]
+        self.convex_hull = v[0:M]
         print self.convex_hull
         print len(self.convex_hull)
 
@@ -170,9 +171,10 @@ def main():
         obstacle_table.append(Obstacle(num_of_vertices, list(temp_table), temp_table, False, a))
         obstacle_table[a].grow()
         obstacle_table[a].sort()
+        print "\n\n\n"
         obstacle_table[a].graham_scan()
     temp_table = []
-
+    print "\n\n\n"
     for a in range(0,len(obstacle_table)):
         obstacle_table[a].draw_obstacles()
         obstacle_table[a].draw_convex()
