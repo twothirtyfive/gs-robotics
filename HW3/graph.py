@@ -91,34 +91,12 @@ class Obstacle:
             tmp = v[M]
             v[M] = v[i]
             v[i] = tmp
-            print i,": ",v
+            # print i,": ",v
         print M
-        temp_table = v[0:M-1]
-        print temp_table
-        print len(temp_table)
+        self.convex_hull = v[0:M-1]
+        print self.convex_hull
+        print len(self.convex_hull)
 
-
-
-        # v.insert(0, v.pop(-1))
-        # # print v
-        # # print len(v)
-        #
-        # p = 1   #number of points on convex hull
-        # for i in range(2, self.v_num):
-        #     while self.ccw(v[p-1], v[p], v[p+1]) <= 0:
-        #         if p > 1:
-        #             p -= 1
-        #             continue
-        #         elif i == p:
-        #             break
-        #         else:
-        #             i += 1
-        #     p += 1
-        #     temp = v[p]
-        #     v[p] = v[i]
-        #     v[i] = temp
-        # print len(v)
-        # print v
 
     def draw_obstacles(self):
         #draw original obstacles
@@ -133,6 +111,16 @@ class Obstacle:
         plt.plot([temp_x[0], temp_x[-1]], [temp_y[0], temp_y[-1]], color='black', lw=1)
 
         #draw grown obstacles
+    def draw_convex(self):
+        temp_x = []
+        temp_y = []
+        for x,y in self.convex_hull:
+            temp_x.append(x)
+            temp_y.append(y)
+        print temp_x
+        print temp_y
+        plt.plot(temp_x, temp_y, color='black', lw=1)
+        plt.plot([temp_x[0], temp_x[-1]], [temp_y[0], temp_y[-1]], color='black', lw=1)
 
 
 def setup_env(input_table):
@@ -182,10 +170,12 @@ def main():
         obstacle_table.append(Obstacle(num_of_vertices, list(temp_table), temp_table, False, a))
         obstacle_table[a].grow()
         obstacle_table[a].sort()
+        obstacle_table[a].graham_scan()
     temp_table = []
 
     for a in range(0,len(obstacle_table)):
         obstacle_table[a].draw_obstacles()
+        obstacle_table[a].draw_convex()
 
     # obstacle_table[0].o_print()
     plt.show()

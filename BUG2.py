@@ -1,20 +1,3 @@
-
-
-#!/usr/bin/python
-'''
-This is inspired by both the Ultrasonic Basic Obstacle Avoider
-and Ultrasonic_c_servo examples.
-
-Essentially, the gopigo should:
-  - Move fwd until it is within 20cm of an obstacle
-  - Stop
-  - Scan the room
-  - Find a space between obstacles big enough to fit
-  - Turn in that direction
-  - Move fwd until it is within 20cm of an obstacle
-  - Etc.
-'''
-
 from gopigo import *
 from control import *
 from time import sleep
@@ -27,16 +10,13 @@ INF=200 # Distance, in cm, to be considered infinity.
 REPEAT=2
 DELAY=.02
 set_speed(60)
-set_left_speed(64)
+# set_left_speed(66)
 compass = 0
+mov_dist = []
+toGoal = 0
+obstacleBegin = True
 
 def my_fwd(dist):
-    '''
-    Move chassis fwd by a specified number of cm.
-    This function sets the encoder to the correct number
-     of pulses and then invokes fwd().
-    '''
-    print("hi")
     if dist is not None:
         pulse = int(cm2pulse(dist))
         enc_tgt(1,1,pulse)
@@ -47,30 +27,66 @@ def my_fwd(dist):
 def obstacle():
     abreast = True
     while abreast:
+        print mov_table
+        max_enc = intersect_mline()
+        #goes through different values for debugging purposes
         for ang in range(60,15,-15):
-            c_servo(ang-15)
-            time.sleep(0.3)
-            d = dream_team_us_dist()
             c_servo(ang)
             time.sleep(0.3)
             h = dream_team_us_dist()
+
+            c_servo(ang-15)
+            time.sleep(0.3)
+            d = dream_team_us_dist()
+            
+            
             currentD = h
             print "obstacle at 0: dist = ",d
             print "obstacle at 15: dist = ",h
 
-            t_left, t_right = enc_read(0), enc_read(1)
+        t_left, t_right = enc_read(0), enc_read(1)
+        print "tleft: ",t_left
+        print "tright: ",t_right
+        t_avg = t_left + t_right
+        t_avg /= 2
+        print "t_avg: ",t_avg
+        if max_enc is not -1:
+            t_avg = t_avg + max_enc
+        print t_avg
+        enc_avg = 0
+        if t_avg > 1500:
+            t_avg = 0
+        fwd()
+        enc_calc = int((enc_read(0) + enc_read(1))/2.)
+        print enc_calc
+        while (currentD <= h+20 and currentD <= d+20):
+            if max_enc is not -1 and enc_calc >= t_avg:
+                stop()
+                
+                enc_left, enc_right = enc_read(0) - t_left, enc_read(1) - t_right
+                enc_avg = int((enc_left + enc_right)/2.0)
+                __, orient = mov_table[-1]
+                turn('left',90)
+                orient += 90
+                insert_mov_plot(find_current_plot(enc_avg), orient)
 
-            fwd()
-            while currentD <= h+5 and currentD >= h-5:
-                time.sleep(0.2)
+                intersect_mline()
+                print "didn't happen"
+                break
+            enc_calc = int((enc_read(0) + enc_read(1))/2.)
+            # time.sleep(0.2)
+
+            prevD = currentD
+            currentD = dream_team_us_dist()
+            if currentD > prevD*2:
+                print "temp CurrentD",currentD
                 currentD = dream_team_us_dist()
-                time.sleep (0.2)
-            stop()
+            print "CurrentD",currentD
+            # time.sleep (0.2)
+        stop()
 
-        enc_left, enc_right = enc_read(0) - t_left, enc_read(1) - t_right
-        enc_avg = int((enc_left + enc_right)/2.0)
-        __, orient = mov_table[-1]
-        insert_mov_plot(find_current_plot(enc_avg), orient)
+        if enc_calc >= t_avg:
+            intersect_mline()
 
         # c_servo(90)
         time.sleep(0.2)
@@ -80,23 +96,31 @@ def obstacle():
         # if operand > 0.0:
         #     a = math.sqrt(operand) + 7
         # else:
-        a = 7
-        print "a: ",a
-        raw_input("button...")
+        a = 20
+        t_left, t_right = enc_read(0), enc_read(1)
         my_fwd(a)
-        time.sleep(1.0)
-        enc_left = enc_read(0) - t_left
-        enc_right = enc_read(1) - t_right
+        enc_left, enc_right = enc_read(0) - t_left, enc_read(1) - t_right
         enc_avg = int((enc_left + enc_right)/2.0)
+        __, orient = mov_table[-1]
 
-        turn('right',90)
-        my_fwd(10)
-        time.sleep(1.0)
-        ang = my_adjust()
+        turn('right',100) #100 instead of 90 to account for error in machine
+        orient -= 90
+        if orient < 0:
+            orient = 360 + orient
+        insert_mov_plot(find_current_plot(enc_avg), orient)
+        intersect_mline()
 
-        #insert_mov_plot(find_current_plot(enc_avg), PUTSTUFFHERE)
+
+        my_fwd(25)
+        # ang = my_adjust()
+        # if orient+ang < 0:
+        #     orient = 360 + orient
+        insert_mov_plot(find_current_plot(15), orient)# + ang)
+
         global compass
         compass -= 90
+        global obstacleBegin
+        obstacleBegin = False
         # else:
         #     ang = my_turn()
         #     global compass
@@ -113,10 +137,6 @@ def my_turn():
     time.sleep(0.2)
     ldist = dream_team_us_dist()
     time.sleep(0.2)
-    print "turning"
-    print rdist
-    print mdist
-    print ldist
     if ldist >= mdist or rdist >= mdist:
         deg = 90
     else:
@@ -125,9 +145,7 @@ def my_turn():
         deg = 180-beta
     print "deg ",deg
     my_fwd(5)
-    time.sleep(3)
-    print "preparing to turn left %s degrees" %deg
-    raw_input("turn!")
+    # deg += 10
     turn('left',deg)
     return deg
 
@@ -181,141 +199,15 @@ def turn_to(angle):
     ## This sleep is really just for debugging so I can verify that it turned properly
     time.sleep(1)
 
-def verify_holes(holes):
-    '''
-    A hole is a list of (angle,distance) tuples.
-    To verify that a hole can fit the chassis,
-    we need to calculate the distance between the
-    first and last tuple.
-    Returns a list of (angle,gap distance) tuples.
-    '''
-    print "Verifying holes ... "
-    gaps = []
-    for hole in holes:
-        print "  Hole:{}".format(hole),
-        xy1 = calc_xy(hole[0])
-        xy2 = calc_xy(hole[-1])
-        gap = calc_gap(xy1,xy2)
-        ang1 = hole[0][0]
-        ang2 = hole[-1][0]
-        middle_ang = (ang2 + ang1)/2
-        print "ang:{},gap:{}".format(middle_ang,gap)
-        if gap >= CHASS_WID:
-            print "    It's wide enough!"
-            gaps.append((middle_ang,gap))
-    return gaps
-
-def findholes(readings):
-    '''
-    Each reading will be a (angle,dist) tuple giving
-    the distance to an obstacle at the given angle.
-    To find a hole, we want 3 consecutive INF readings.
-    '''
-    print "Processing readings to find holes...."
-    print readings
-    holes = []
-    buf = []
-    ## Previous non-INF reading
-    prev = ()
-    for (a,d) in readings:
-        print "  {}:{}".format(a,d)
-        if d < INF:
-            ## If dist is not INF, then we've hit another
-            ## obstacle, so reset the buffer.
-            if len(buf) > 2:
-                ## If the buffer has at least 3 INF readings,
-                ## then record the hole.
-                holes.append(buf)
-                print "    Found a hole: {}:{}".format(a,d)
-            buf = []
-            continue
-        ## Add reading to buffer
-        buf.append((a,d))
-    ## In case the last reading was INF
-    if len(buf) > 2:
-        holes.append(buf)
-        print "    Found a hole: {}:{}".format(a,d)
-    return holes
-
-def scan_room():
-    '''
-    Start at 0 and move to 180 in increments.
-    Angle required to fit chass @20cm away is:
-        degrees(atan(CHASS_WID/20))
-    Increments angles should be 1/2 of that.
-    Looking for 3 consecutive readings of inf.
-    3 misses won't guarantee a big enough hole
-     because not every obstacle will be 20cm away,
-     but it is a good place to start, and more
-     importantly, gives us edges to use to
-     measure.
-
-    Return list of (angle,dist).
-    '''
-    ret = []
-    inc = int(math.degrees(math.atan(CHASS_WID/20)))
-    print "Scanning room in {} degree increments".format(inc)
-    for ang in range(0,180,inc):
-        print "  Setting angle to {} ... ".format(ang),
-        ## resetting ang because I've seen issues with 0 and 180
-        if ang == 0: ang = 1
-        if ang == 180: ang = 179
-        c_servo(ang)
-        buf=[]
-        for i in range(SAMPLES):
-            dist=us_dist(15)
-            print dist,
-            if dist<INF and dist>=0:
-                buf.append(dist)
-            else:
-                buf.append(INF)
-        print
-        ave = math.fsum(buf)/len(buf)
-        print "  dist={}".format(ave)
-        ret.append((ang,ave))
-        ## Still having issues with inconsistent readings.
-        ## e.g.
-        ##  Setting angle to   0 ...    18   19 218 49
-        ##  Setting angle to 170 ...  1000 1000  45 46
-        time.sleep(DELAY)
-    ## Reset c_servo to face front
-    c_servo(90)
-    return ret
-
-def calc_xy(meas):
-    '''
-    Given an angle and distance, return (x,y) tuple.
-    x = dist*cos(radians(angle))
-    y = dist*sin(radians(angle))
-    '''
-    a = meas[0]
-    d = meas[1]
-    x = d*math.cos(math.radians(a))
-    y = d*math.sin(math.radians(a))
-    return (x,y)
-
-def calc_gap(xy1,xy2):
-    '''
-    Given two points represented by (x,y) tuples,
-    calculate the distance between the two points.
-    dist is the hyp of the triangle.
-
-    dist = sqrt((x1-x2)^2 + (y1-y2)^2)
-    '''
-    dist = math.hypot(xy1[0]-xy2[0],xy1[1]-xy2[1])
-    return dist
-
-
-
 
 
 CRCM = 2 * 3.14159 * 3.25
-BIGNUM = 999999
+BIGNUM = -1
 OBS_DIST = 20
 
 mov_table = []
 obs_table = []
-goal = (0,3)
+goal = (0,2.)
 
 #initate
 def start_plot():
@@ -325,11 +217,9 @@ def start_plot():
 #check plot for being previously visited, 0 means you've been there before
 def check_plot(plot):
     cx,cy = plot
-    print plot
     for pos,orient in mov_table:
-        print pos
         x,y = pos
-        if (x - .1 <= cx <= x + .1) and (y - .1 <= cy <= y + .1):
+        if (x - .005 <= cx <= x + .005) and (y - .005 <= cy <= y + .005):
             return 0
     return 1
 
@@ -351,29 +241,15 @@ def insert_mov_plot(plot, orientation):
 
 #after moving and turning, returns current position and orientation (for adding to plots)
 def find_current_plot(encoders):
-    distance = (encoders*CRCM)/18.
+    distance = math.fabs((encoders*CRCM)/18.) / 100.
     pos,orient = mov_table[-1]
-    var_x = 1.
-    var_y = 1.
     x,y = pos
-    if orient > 90:
-        temp = orient
-    elif 90 < orient <= 180:
-        temp = 180 - orient
-        var_x = -1.
-    elif 180 < orient <= 270:
-        temp = 270 - orient
-        var_x = -1.
-        var_y = -1.
-    elif 270 < orient <= 360:
-        temp = 360 - orient
-        var_y = -1.
 
-    ydist = var_y * distance * math.sin(math.radians(orient))
-    xdist = var_x * distance * math.cos(math.radians(orient))
+    ydist = distance * math.sin(math.radians(orient))
+    xdist = distance * math.cos(math.radians(orient))
 
-    nx = (xdist + x)/100.
-    ny = (ydist + y)/100.
+    nx = xdist + x
+    ny = ydist + y
 
     return (nx,ny)
 
@@ -389,61 +265,97 @@ def current_position():
 
 #use this after inserting the newest plot and adding to mov_table, returns distance(enc) to mline
 def intersect_mline():
-    plot,orientation = current_position()
-    x,__ = plot
-    if x >= 0 and 90 < orientation <= 270:
-        if 90 < orientation <= 180:
-            temp = 180 - orientation
-        elif 180 < orientation <= 270:
-            temp = 270 - orientation
-    elif x < 0 and (0 <= orientation <= 90 or 270 < orientation <= 360):
-        if 0 <= orientation <= 90:
-            temp = orientation
-        elif 270 < orientation <= 360:
-            temp = 360 - orientation
-    else:   #not oriented towards mline
-        return BIGNUM
+    BIGNUM = -1
+    if not obstacleBegin:
+        print "mline enter"
+        print
+        plot,orientation = current_position()
+        x,__ = plot
+        # if x >= 0 and 90 < orientation <= 270:
+        #     if 90 < orientation <= 180:
+        #         temp = 180 - orientation
+        #     elif 180 < orientation <= 270:
+        #         temp = 270 - orientation
+        # elif x < 0 and (0 <= orientation <= 90 or 270 < orientation <= 360):
+        #     if 0 <= orientation <= 90:
+        #         temp = orientation
+        #     elif 270 < orientation <= 360:
+        #         temp = 360 - orientation
+        # elif x >= 0 and (90 > orientation or orientation > 270):
+        #     temp = orientation
 
-    dist = math.abs(x) / math.cos(math.radians(temp)) * 100 #convert m to cm
+        # else:   #not oriented towards mline
+        #     print "return1"
+        #     return BIGNUM
 
-    #if at the mline
-    if dist < 10:
-        n = 0
-        if 0 <= orientation <= 180:
-            if orientation < 90:
-                temp = 180 - orientation
-        elif 180 < orientation <= 360:
-            if orientation <= 270:
-                turn('right',orientation+90)
-                temp = 90
-                n = 1
+        dist = math.fabs(x) * 100 #convert m to cm
+        print "dist: ",dist
+        #if at the mline
+        if dist < 5:
+            n = 0
+            temp = 0
+            if 0 <= orientation <= 180:
+                if orientation < 90:
+                    temp = 90 - orientation
+            elif 180 < orientation <= 360:
+                if orientation <= 270:
+                    turn('right',270-orientation)
+                    temp = 90
+                    n = 1
+                else:
+                    turn('left',(360-orientation)+90)
+                    temp = 90
+                    n = 2
+            c_servo(temp + 90)
+            time.sleep(.2)
+            distance = dream_team_us_dist()
+            goal_dist = distance_to_goal()
+
+            #if you can see the goal unobstructed, go for it
+            if distance >= goal_dist:
+                enc = (goal_dist/CRCM) * 18.
+                if 0 <= orientation <= 90:
+                    turn('left', 90-orientation)
+                elif 90 < orientation <= 180:
+                    turn('right', orientation-90)
+                enc_tgt(1,1, int(math.ceil(enc)))
+                fwd()
+                while read_enc_status() != 0:
+                    time.sleep(.2)
+                stop()
+                print "Goal Reached!"
+                raise SystemExit
+            # elif distance <= OBS_DIST:  #return to previous orientation
+            #     if n == 1:
+            #         turn('left', orientation+90)
+            #     elif n == 2:
+            #         turn('right', (360-orientation)+90)
+            #     print "return2"
+            #     return BIGNUM
+            #if we are going to travel along the mline with a future obstacle
             else:
-                turn('left',(360-orientation)+90)
-                temp = 90
-                n = 2
-        c_servo(temp)
-        time.sleep(0.5)
-        distance = dream_team_us_dist()
-        goal_dist = distance_to_goal()
-        #if you can see the goal unobstructed, go for it
-        if distance >= goal_dist:
-            enc = (goal_dist/CRCM) * 18.
-            if 0 <= orientation <= 90:
-                turn('left', 90-orientation)
-            elif 90 < orientation <= 180:
-                turn('right', orientation-90)
-            enc_tgt(1,1, int(math.ceil(enc)))
-            fwd()
-            return 0
-        elif distance <= OBS_DIST:  #return to previous orientation
-            if n == 1:
-                turn('left', orientation+90)
-            elif n == 2:
-                turn('right', (360-orientation)+90)
-            return BIGNUM
+                pos,orient = mov_table[-1]
+                x,y = pos
+                if 0 <= orient <= 90:
+                    turn_deg = 90 - orient
+                    turn('left', turn_deg)
+                elif 90 < orient <= 270:
+                    turn_deg = orient - 90
+                    turn('right', turn_deg)
+                my_fwd(15)
+                insert_mov_plot((x,y+0.15), 90)
+                print "return3"
 
-    #number of encoders to the closest mline point on current orientation
-    return (dist/CRCM)*18.
+                runner()
+
+        #number of encoders to the closest mline point on current orientation
+        print "return4"
+        if orientation == 90:
+            return BIGNUM
+        print "dist: ",dist
+        return dist
+
+    return BIGNUM
 
 #return distance in cm
 def distance_to_goal():
@@ -459,46 +371,39 @@ def print_plots():
         print plt.gca().get_lines()[n].get_xydata()
 
 def main():
-    mov_dist = []
+    #mov_dist = []
     inline = True
     abreast = False
-    goal = 200
+    # goal = 200
+    global toGoal
     toGoal = 0
     atGoal = False
     print "*** Starting BUG2 Example ***"
     c_servo(90)
     start_plot()
+    runner()
 
-    while not atGoal:
-        d = dream_team_us_dist()
-        d = d - 8
-        print(d)
-        start_left = enc_read(0)
-        print(start_left)
-        start_right = enc_read(1)
-        print(start_right)
-        #raise SystemExit
-        my_fwd(d-5)
+def runner():
+    d = dream_team_us_dist()
+    d = d - 5
+    start_left, start_right = enc_read(0), enc_read(1)
+    my_fwd(d-5)
+    global mov_dist
+    mov_dist.append(d)
+    global toGoal
+    toGoal += d
+    delta_left_enc = enc_read(0) - start_left
+    delta_right_enc = enc_read(1) - start_right
+    ang = my_turn()
 
-        mov_dist.append(d)
-
-        toGoal += d
-        print "enc read left: ", enc_read(0)
-        print "enc read right: ", enc_read(1)
-        delta_left_enc = enc_read(0) - start_left
-        delta_right_enc = enc_read(1) - start_right
-        print delta_left_enc
-        print delta_right_enc
-        ang = my_turn()
-
-        __, orient = mov_table[-1]
-        insert_mov_plot(find_current_plot(mov_dist[-1]), orient + ang)
-
-        global compass
-        compass += ang
-        inline = False
-        print mov_table
-        obstacle()
+    __, orient = mov_table[-1]
+    insert_mov_plot(find_current_plot(mov_dist[-1]), orient + ang)
+    global compass
+    compass += ang
+    inline = False
+    global obstacleBegin
+    obstacleBegin = True
+    obstacle()
 
     # for x in range(REPEAT):
     #     move(STOP_DIST)
@@ -512,6 +417,5 @@ def main():
     #     ## Choose the first gap found
     #     turn_to(gaps[0][0])
     # c_servo(90)
-    stop()
 if __name__ == '__main__':
     main()
