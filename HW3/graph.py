@@ -147,10 +147,10 @@ def dijkstra(vdict):
             else:
                 x = 1
     dij_edges = []
-    print "\n\n"
-    printDict(vdict)
+    # print "\n\n"
+    # printDict(vdict)
     for vert in vdict.values():
-        print "test",vert.name
+        # print "test",vert.name
         if vert.distance is 0:
             continue
         vert.prev_index = vert.neighbors.index(vert.prev)
@@ -257,10 +257,12 @@ def createEdges(points):
 
 def plotEdges(edges,col):
     colo = 'black'
+    sz = 1
     if col is 1:
         colo = 'blue'
+        sz = 4
     for i in edges:
-        plt.plot([i.sx, i.ex], [i.sy, i.ey], color=colo, lw=1)
+        plt.plot([i.sx, i.ex], [i.sy, i.ey], color=colo, lw=sz)
 
 def main():
     input_table = []
@@ -329,10 +331,22 @@ def main():
             if j is 0:
                 node_dict[nn] = Node(nn)
             node_dict[nn].insert(nm,eds[j])
-    print "First"
-    printDict(node_dict)
+    # print "First"
+    # printDict(node_dict)
     node_dict["s"] = Node("s")
     node_dict["g"] = Node("g")
+
+    x = Edge(start[0],start[1],goal[0],goal[1])
+    bl = True
+    for yn in range(num_of_obstacles):
+        for y in convex_edges[yn]:
+            if x.intersect(y):
+                bl = False
+                break
+    if bl:
+        dj_edges.append(x)
+        node_dict["s"].insert("g",x)
+        node_dict["g"].insert("s",x)
 
     convex_points.append([start,goal])
     for i in range(0,num_of_obstacles):
@@ -368,9 +382,9 @@ def main():
                         # print "x",x
 
 
-    plotEdges(dj_edges,0)
-    print "\n\n\n\nSecond"
-    printDict(node_dict)
+    # plotEdges(dj_edges,0)
+    # print "\n\n\n\nSecond"
+    # printDict(node_dict)
     fini = dijkstra(node_dict)
     plotEdges(fini,1)
     # obstacle_table[0].o_print()
