@@ -4,6 +4,9 @@ from string import split
 
 R_DIM = (14,23) #example, robot that is 10cm x 10cm
 Starting_orientation = 45
+orient_factor = math.cos(Starting_orientation)
+orient_factor2 = math.sin(Starting_orientation)
+
 class Obstacle:
     v_num = 0
     old_vertices = []
@@ -21,9 +24,9 @@ class Obstacle:
     def grow(self):
         for a in range(0, self.v_num):
             x,y = self.vertices[a]
-            self.vertices.append([x-math.cos(45)*R_DIM[0], y+math.cos(45)*R_DIM[0]])
-            self.vertices.append([x+math.cos(45)*R_DIM[1], y+math.cos(45)*R_DIM[1]])
-            self.vertices.append([x-math.cos(45)*R_DIM[0]+math.cos(45)*R_DIM[1], y+math.cos(45)*R_DIM[1]+math.cos(45)*R_DIM[0]])
+            self.vertices.append([x-orient_factor*R_DIM[0], y+orient_factor2*R_DIM[0]])
+            self.vertices.append([x+orient_factor2*R_DIM[1], y+orient_factor*R_DIM[1]])
+            self.vertices.append([x-orient_factor*R_DIM[0]+orient_factor2*R_DIM[1], y+orient_factor*R_DIM[1]+orient_factor2*R_DIM[0]])
         self.grown = True
 
     def sort(self):
@@ -92,11 +95,11 @@ class Obstacle:
             v[i] = tmp
             temp = v
 
-            print i,": ",v
-        print M
+            # print i,": ",v
+        # print M
         self.convex_hull = v[0:M]
-        print self.convex_hull
-        print len(self.convex_hull)
+        # print self.convex_hull
+        # print len(self.convex_hull)
 
 
     def draw_obstacles(self):
@@ -106,8 +109,8 @@ class Obstacle:
         for x,y in self.old_vertices:
             temp_x.append(x)
             temp_y.append(y)
-        print temp_x
-        print temp_y
+        # print temp_x
+        # print temp_y
         plt.plot(temp_x, temp_y, color='black', lw=1)
         plt.plot([temp_x[0], temp_x[-1]], [temp_y[0], temp_y[-1]], color='black', lw=1)
 
@@ -118,10 +121,101 @@ class Obstacle:
         for x,y in self.convex_hull:
             temp_x.append(x)
             temp_y.append(y)
-        print temp_x
-        print temp_y
+        # print temp_x
+        # print temp_y
         plt.plot(temp_x, temp_y, color='black', lw=1)
         plt.plot([temp_x[0], temp_x[-1]], [temp_y[0], temp_y[-1]], color='black', lw=1)
+
+def dijkstra(vdict):
+    x = 1
+    vdict["s"].visited = True
+    vdict["s"].distance = 0
+    while x is 1:
+        x = 0
+        for vert in vdict.values():
+            if vert.visited is True:
+                # print "inside",vert.name
+                for node,dist in vert.pairs:
+                    # print "super",node
+                    if vdict[node].visited is not True:
+                        vdict[node].visited = True
+                        vdict[node].distance = vert.distance + dist
+                        vdict[node].prev = vert.name
+                    elif((vert.distance + dist) < vdict[node].distance):
+                        vdict[node].distance = vert.distance + dist
+                        vdict[node].prev = vert.name
+            else:
+                x = 1
+    dij_edges = []
+    print "\n\n"
+    printDict(vdict)
+    for vert in vdict.values():
+        print "test",vert.name
+        if vert.distance is 0:
+            continue
+        vert.prev_index = vert.neighbors.index(vert.prev)
+    dij_edges.append(vdict["g"].edges[vdict["g"].prev_index])
+    stt = vdict["g"].prev
+    while vdict[stt].distance is not 0:
+        dij_edges.append(vdict[stt].edges[vdict[stt].prev_index])
+        stt = vdict[stt].prev
+    return dij_edges
+
+
+class Node:
+    def __init__( self, nm ):
+        # self.point = [x,y]
+        self.name = nm
+        self.visited = False
+        self.distances = []
+        self.neighbors = []
+        self.edges = []
+        self.pairs = []
+        self.distance = -1
+        self.prev = nm
+        self.prev_index = -1
+
+    def insert(self, node, edge):
+        self.distances.append(edge.distance)
+        self.edges.append(edge)
+        self.neighbors.append(node)
+        self.pairs.append([node,edge.distance])
+
+class Edge:
+
+    def __init__( self, ax,  ay,  bx,  by ):
+        self.sx = ax
+        self.sy = ay
+        self.ex = bx
+        self.ey = by
+        self.x = [ax,bx]
+        self.y = [ay,by]
+        self.one = [ax,ay]
+        self.two = [bx,by]
+        self.minx = min(self.x)
+        self.maxx = max(self.x)
+        self.miny = min(self.y)
+        self.maxy = max(self.y)
+        self.dx = ax-bx
+        self.dy = ay-by
+        self.num = ax*by - ay*bx
+        self.distance = math.sqrt( pow(ax-bx,2.0) + pow(ay-by,2) )
+
+
+    def intersect(self, other):
+        base = self.dx*other.dy - other.dx*self.dy
+        px = (self.num*other.dx - self.dx*other.num)/base
+        py = (self.num*other.dy - self.dy*other.num)/base
+        if (self.minx < px < self.maxx and self.miny < py < self.maxy) and (other.minx < px < other.maxx and other.miny < py < other.maxy):
+            # print "p",px,",",py
+            # print "self",self.x,",",self.y
+            # print self.minx,",",self.maxx,",",self.miny,",",self.maxy
+            # print "other",other.x,",",other.y
+            # print other.minx,",",other.maxx,",",other.miny,",",other.maxy
+            return True
+        else:
+            # print "hi"
+            return False
 
 
 def setup_env(input_table):
@@ -134,29 +228,41 @@ def setup_env(input_table):
     plt.text(goal_coord[0], goal_coord[1], 'goal')
     plt.plot([0, env_coord[0], env_coord[0], 0], [0, 0, env_coord[1], env_coord[1]], color='g', lw=2)
     draw_rover(start_coord)
+    return start_coord,goal_coord
 
 def draw_rover(Starting_pos):
     temp_x = []
     temp_y = []
     temp_x.append(Starting_pos[0])
     temp_y.append(Starting_pos[1])
-    temp_x.append(Starting_pos[0]+math.cos(45)*R_DIM[0])
-    temp_y.append(Starting_pos[1]-math.cos(45)*R_DIM[0])
-    temp_x.append(Starting_pos[0]+math.cos(45)*R_DIM[0]-math.cos(45)*R_DIM[1])
-    temp_y.append(Starting_pos[1]-math.cos(45)*R_DIM[1]-math.cos(45)*R_DIM[0])
-    temp_x.append(Starting_pos[0]-math.cos(45)*R_DIM[1])
-    temp_y.append(Starting_pos[1]-math.cos(45)*R_DIM[1])
+    temp_x.append(Starting_pos[0]+orient_factor*R_DIM[0])
+    temp_y.append(Starting_pos[1]-orient_factor2*R_DIM[0])
+    temp_x.append(Starting_pos[0]+orient_factor*R_DIM[0]-orient_factor2*R_DIM[1])
+    temp_y.append(Starting_pos[1]-orient_factor*R_DIM[1]-orient_factor2*R_DIM[0])
+    temp_x.append(Starting_pos[0]-orient_factor2*R_DIM[1])
+    temp_y.append(Starting_pos[1]-orient_factor*R_DIM[1])
     plt.plot(temp_x, temp_y, color='black', lw=1)
     plt.plot([temp_x[0], temp_x[-1]], [temp_y[0], temp_y[-1]], color='black', lw=1)
     
+def createEdges(points):
+    c_edges = []
+    for i in range(len(points)):
+        pos = points[i]
+        nex = points[i-1]
+        # print "pos",pos
+        # print "nex",nex
+        ed = Edge( pos[0], pos[1], nex[0], nex[1] )
+        c_edges.append(ed)
+    return c_edges
+
+def plotEdges(edges,col):
+    colo = 'black'
+    if col is 1:
+        colo = 'blue'
+    for i in edges:
+        plt.plot([i.sx, i.ex], [i.sy, i.ey], color=colo, lw=1)
 
 def main():
-    # test_obs = Obstacle(4, [[0,0], [0,10], [10,0], [10,10]], False)
-    # test_obs.grow()
-    # test_obs.sort()
-    # test_obs.graham_scan()
-    # test_obs.o_print()
-
     input_table = []
     obstacle_table = []
     input_file = sys.argv[1]
@@ -171,10 +277,15 @@ def main():
         x = map(float, x.split())
         input_table.append(x)
 
-    setup_env(input_table)
+    convex_points = []
+    start,goal = setup_env(input_table)
 
     num_of_obstacles = int(input_table[0][0])
     input_table.pop(0)
+    convex_edges = []
+    dj_edges = []
+
+
 
     for a in range(0, num_of_obstacles):
         temp_table = []
@@ -187,20 +298,108 @@ def main():
         obstacle_table.append(Obstacle(num_of_vertices, list(temp_table), temp_table, False, a))
         obstacle_table[a].grow()
         obstacle_table[a].sort()
-        print "\n\n\n"
         obstacle_table[a].graham_scan()
-    temp_table = []
-    print "\n\n\n"
-    for a in range(0,len(obstacle_table)):
         obstacle_table[a].draw_obstacles()
         obstacle_table[a].draw_convex()
+        convex_points.append(obstacle_table[a].convex_hull)
 
+        # tmp = obstacle_table[a].convex_hull
+        # for i in tmp:
+        #     convex_points.append(i)
+
+        convex_edges.append(createEdges(obstacle_table[a].convex_hull))
+
+        # tmp = createEdges(obstacle_table[a].convex_hull)
+        # for i in tmp:
+            # convex_edges.append(i)
+    node_dict = {}
+    for i in range(num_of_obstacles):
+        tmp = convex_points[i]
+        eds = convex_edges[i]
+        for j in range(len(tmp)):
+            nm = str(i)+str(j)
+            nn = str(i)
+            if j is 0:
+                nn += str(len(tmp)-1)
+            else:
+                nn += str(j-1)
+            if j is not (len(tmp)-1):
+                node_dict[nm] = Node(nm)
+            node_dict[nm].insert(nn,eds[j])
+            if j is 0:
+                node_dict[nn] = Node(nn)
+            node_dict[nn].insert(nm,eds[j])
+    print "First"
+    printDict(node_dict)
+    node_dict["s"] = Node("s")
+    node_dict["g"] = Node("g")
+
+    convex_points.append([start,goal])
+    for i in range(0,num_of_obstacles):
+        tmp = convex_points[i]
+        for j in range(i+1,num_of_obstacles+1):
+            tp = convex_points[j]
+            for on in range(len(tmp)):
+                for tw in range(len(tp)):
+                    one = tmp[on]
+                    two = tp[tw]
+                    x = Edge(one[0],one[1],two[0],two[1])
+                    bl = True
+                    for yn in range(num_of_obstacles):
+                        if yn is i or yn is j:
+                            l = 1
+                        for y in convex_edges[yn]:
+                            if x.intersect(y):
+                                bl = False
+                                break
+                    if bl:
+                        dj_edges.append(x)
+                        str1 = str(i)+str(on)
+                        str2 = ""
+                        if j is num_of_obstacles:
+                            if tw is 0:
+                                str2 = "s"
+                            else:
+                                str2 = "g"
+                        else:
+                            str2 = str(j)+str(tw)
+                        node_dict[str1].insert(str2,x)
+                        node_dict[str2].insert(str1,x)
+                        # print "x",x
+
+
+    plotEdges(dj_edges,0)
+    print "\n\n\n\nSecond"
+    printDict(node_dict)
+    fini = dijkstra(node_dict)
+    plotEdges(fini,1)
     # obstacle_table[0].o_print()
     plt.show()
     # obstacle_table[0].graham_scan()
+
+def printDict(dict):
+    for x in dict.values():
+        print "name",x.name
+        print "neighbors",x.neighbors
+        print "prev",x.prev
+
+
+
+
 
 
 
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
+
+
+
+
+
+
