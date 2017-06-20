@@ -186,13 +186,12 @@ def anything_equals(ax,bx):
     x1 = ax[1]
     x2 = bx[0]
     x3 = bx[1]
-    if x == x2 or x == x3 or x1 == x2 or x1 == x3:
+    if ((x == x2) or (x == x3)) or ((x1 == x2) or (x1 == x3)):
         return True
     else:
         return False
 
 class Edge:
-
     def __init__( self, ax,  ay,  bx,  by ):
         self.sx = ax
         self.sy = ay
@@ -211,28 +210,41 @@ class Edge:
         self.num = ax*by - ay*bx
         self.distance = math.sqrt( pow(ax-bx,2.0) + pow(ay-by,2) )
 
-
     def intersect(self, other):
+        if self.sx==other.sx and self.sy==other.sy:
+            return False
+        if self.sx==other.ex and self.sy==other.ey:
+            return False
+        if self.ex==other.sx and self.ey==other.sy:
+            return False
+        if self.ex==other.ex and self.ey==other.ey:
+            return False
         base = self.dx*other.dy - other.dx*self.dy
         if base == 0.0:
-            print "0",self.one,self.two,other.one,other.two
-            if anything_equals(self.x,other.x) or anything_equals(self.y,other.y):
-                return True
-            else:
-                return False
+            if self.dx == 0.0 and other.dx==0.0:
+                if self.sx != other.sx:
+                    return False
+                else:
+                    return True
+            if self.dy == 0.0 and other.dy==0.0:
+                if self.sy != other.sy:
+                    return False
+                else:
+                    return True
         px = (self.num*other.dx - self.dx*other.num)/base
         py = (self.num*other.dy - self.dy*other.num)/base
-        if (self.minx <= px <= self.maxx and self.miny <= py <= self.maxy) and (other.minx <= px <= other.maxx and other.miny <= py <= other.maxy):
+        
+        if ((self.minx < px < self.maxx) and (self.miny < py < self.maxy)) and ((other.minx < px < other.maxx) and (other.miny < py < other.maxy)):
+            print "hi"
             return True
         else:
+            print "\np",px,",",py
+            print "self",self.one,",",self.two
+            print self.minx,",",self.maxx,",",self.miny,",",self.maxy
+            print "other",other.one,",",other.two
+            print other.minx,",",other.maxx,",",other.miny,",",other.maxy
+            # print "0",self.one,self.two,other.one,other.two
             return False
-            # print "p",px,",",py
-            # print "self",self.x,",",self.y
-            # print self.minx,",",self.maxx,",",self.miny,",",self.maxy
-            # print "other",other.x,",",other.y
-            # print other.minx,",",other.maxx,",",other.miny,",",other.maxy
-            
-
 
 def setup_env(input_table):
     start_coord = input_table.pop(0)
@@ -302,7 +314,7 @@ def main():
     input_table.pop(0)
     convex_edges = []
     dj_edges = []
-
+    cvx_edges = []
 
 
     for a in range(0, num_of_obstacles):
@@ -320,20 +332,20 @@ def main():
         obstacle_table[a].draw_obstacles()
         obstacle_table[a].draw_convex()
         convex_points.append(obstacle_table[a].convex_hull)
-        convex_edges.append(createEdges(obstacle_table[a].convex_hull))
-
+        cvx_edges.append(createEdges(obstacle_table[a].convex_hull))
+        tmp = createEdges(obstacle_table[a].convex_hull)
+        for i in tmp:
+            convex_edges.append(i)
         # tmp = obstacle_table[a].convex_hull
         # for i in tmp:
         #     convex_points.append(i)
 
         
-        # tmp = createEdges(obstacle_table[a].convex_hull)
-        # for i in tmp:
-            # convex_edges.append(i)
+        
     node_dict = {}
     for i in range(num_of_obstacles):
         tmp = convex_points[i]
-        eds = convex_edges[i]
+        eds = cvx_edges[i]
         for j in range(len(tmp)):
             nm = str(i)+str(j)
             nn = str(i)
@@ -354,18 +366,17 @@ def main():
 
     x = Edge(start[0],start[1],goal[0],goal[1])
     bl = True
-    for yn in range(num_of_obstacles):
-        for y in convex_edges[yn]:
-            if x.intersect(y):
-                bl = False
-                break
+    for y in convex_edges:
+        if x.intersect(y):
+            bl = False
+            break
     if bl:
         dj_edges.append(x)
         node_dict["s"].insert("g",x)
         node_dict["g"].insert("s",x)
 
     convex_points.append([start,goal])
-    for i in range(0,num_of_obstacles):
+    for i in range(num_of_obstacles):
         tmp = convex_points[i]
         for j in range(i+1,num_of_obstacles+1):
             tp = convex_points[j]
@@ -373,18 +384,17 @@ def main():
                 for tw in range(len(tp)):
                     one = tmp[on]
                     two = tp[tw]
+                    # print "edge"
+                    # print one
+                    # print two
                     x = Edge(one[0],one[1],two[0],two[1])
                     bl = True
-                    for yn in range(num_of_obstacles):
-                        same = False
-                        count = 0
-                        if yn == i or yn == j:
-                            same = True
-                        for y in convex_edges[yn]:
-                            if x.intersect(y):
-                                bl = False
-                        # if count >= 2:
-                        #     bl = False
+                    # won = False
+                    # lose = False
+                    for y in convex_edges:
+                        mybl = x.intersect(y)
+                        if mybl:
+                            bl = False
                     if bl:
                         dj_edges.append(x)
                         str1 = str(i)+str(on)
@@ -400,11 +410,11 @@ def main():
                         node_dict[str2].insert(str1,x)
                         # print "x",x
 
-
+    # print "obst",num_of_obstacles
     plotEdges(dj_edges,0)
     # print "\n\n\n\nSecond"
     # printDict(node_dict)
-    fini = dijkstra(node_dict)
+    # fini = dijkstra(node_dict)
     # plotEdges(fini,1)
     # obstacle_table[0].o_print()
     plt.show()
@@ -432,7 +442,36 @@ if __name__ == '__main__':
 
 
 
-
+    # if yn == i:
+                        #     won = True
+                        #     lose = False
+                        # elif yn == j:
+                        #     lose = True
+                        #     won = False
+                        # else:
+                        # #     won = False
+                        # #     lose = False
+                        # yy = convex_edges[yn]
+                        # for y in range(len(yy)):
+                        #     # if won:
+                        #     #     if y == on:
+                        #     #         continue
+                        #     #     if on == 0 and y == (len(tmp)-1):
+                        #     #         continue
+                        #     #     if y == on-1:
+                        #     #         continue
+                        #     # if lose:
+                        #     #     if y == tw:
+                        #     #         continue
+                        #     #     if tw == 0 and y == (len(tp)-1):
+                        #     #         continue
+                        #     #     if y == tw-1:
+                        #     #         continue
+                        #     ye = yy[y]
+                        #     mybl = x.intersect(ye)
+                        #     if mybl:
+                        #         bl = False
+                        #         break
 
 
 
