@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import sys, math
 from string import split
 
-R_DIM = (14,23) #example, robot that is 10cm x 10cm
-Starting_orientation = 45
+R_DIM = (23,23) #example, robot that is 10cm x 10cm
+Starting_orientation = 90
 orient_factor = math.cos(Starting_orientation)
 orient_factor2 = math.sin(Starting_orientation)
 
@@ -24,9 +24,9 @@ class Obstacle:
     def grow(self):
         for a in range(0, self.v_num):
             x,y = self.vertices[a]
-            self.vertices.append([x-orient_factor*R_DIM[0], y+orient_factor2*R_DIM[0]])
-            self.vertices.append([x+orient_factor2*R_DIM[1], y+orient_factor*R_DIM[1]])
-            self.vertices.append([x-orient_factor*R_DIM[0]+orient_factor2*R_DIM[1], y+orient_factor*R_DIM[1]+orient_factor2*R_DIM[0]])
+            self.vertices.append([x+R_DIM[0], y])
+            self.vertices.append([x, y+R_DIM[1]])
+            self.vertices.append([x+R_DIM[0], y+R_DIM[1]])
         self.grown = True
 
     def sort(self):
@@ -123,8 +123,8 @@ class Obstacle:
             temp_y.append(y)
         # print temp_x
         # print temp_y
-        plt.plot(temp_x, temp_y, color='black', lw=1)
-        plt.plot([temp_x[0], temp_x[-1]], [temp_y[0], temp_y[-1]], color='black', lw=1)
+        plt.plot(temp_x, temp_y, color='red', lw=1)
+        plt.plot([temp_x[0], temp_x[-1]], [temp_y[0], temp_y[-1]], color='red', lw=1)
 
 def dijkstra(vdict):
     x = 1
@@ -181,6 +181,16 @@ class Node:
         self.neighbors.append(node)
         self.pairs.append([node,edge.distance])
 
+def anything_equals(ax,bx):
+    x = ax[0]
+    x1 = ax[1]
+    x2 = bx[0]
+    x3 = bx[1]
+    if x == x2 or x == x3 or x1 == x2 or x1 == x3:
+        return True
+    else:
+        return False
+
 class Edge:
 
     def __init__( self, ax,  ay,  bx,  by ):
@@ -204,18 +214,24 @@ class Edge:
 
     def intersect(self, other):
         base = self.dx*other.dy - other.dx*self.dy
+        if base == 0.0:
+            print "0",self.one,self.two,other.one,other.two
+            if anything_equals(self.x,other.x) or anything_equals(self.y,other.y):
+                return True
+            else:
+                return False
         px = (self.num*other.dx - self.dx*other.num)/base
         py = (self.num*other.dy - self.dy*other.num)/base
-        if (self.minx < px < self.maxx and self.miny < py < self.maxy) and (other.minx < px < other.maxx and other.miny < py < other.maxy):
+        if (self.minx <= px <= self.maxx and self.miny <= py <= self.maxy) and (other.minx <= px <= other.maxx and other.miny <= py <= other.maxy):
+            return True
+        else:
+            return False
             # print "p",px,",",py
             # print "self",self.x,",",self.y
             # print self.minx,",",self.maxx,",",self.miny,",",self.maxy
             # print "other",other.x,",",other.y
             # print other.minx,",",other.maxx,",",other.miny,",",other.maxy
-            return True
-        else:
-            # print "hi"
-            return False
+            
 
 
 def setup_env(input_table):
@@ -235,12 +251,12 @@ def draw_rover(Starting_pos):
     temp_y = []
     temp_x.append(Starting_pos[0])
     temp_y.append(Starting_pos[1])
-    temp_x.append(Starting_pos[0]+orient_factor*R_DIM[0])
-    temp_y.append(Starting_pos[1]-orient_factor2*R_DIM[0])
-    temp_x.append(Starting_pos[0]+orient_factor*R_DIM[0]-orient_factor2*R_DIM[1])
-    temp_y.append(Starting_pos[1]-orient_factor*R_DIM[1]-orient_factor2*R_DIM[0])
-    temp_x.append(Starting_pos[0]-orient_factor2*R_DIM[1])
-    temp_y.append(Starting_pos[1]-orient_factor*R_DIM[1])
+    temp_x.append(Starting_pos[0]-R_DIM[0])
+    temp_y.append(Starting_pos[1])
+    temp_x.append(Starting_pos[0]-R_DIM[0])
+    temp_y.append(Starting_pos[1]-R_DIM[0])
+    temp_x.append(Starting_pos[0])
+    temp_y.append(Starting_pos[1]-R_DIM[1])
     plt.plot(temp_x, temp_y, color='black', lw=1)
     plt.plot([temp_x[0], temp_x[-1]], [temp_y[0], temp_y[-1]], color='black', lw=1)
     
@@ -304,13 +320,13 @@ def main():
         obstacle_table[a].draw_obstacles()
         obstacle_table[a].draw_convex()
         convex_points.append(obstacle_table[a].convex_hull)
+        convex_edges.append(createEdges(obstacle_table[a].convex_hull))
 
         # tmp = obstacle_table[a].convex_hull
         # for i in tmp:
         #     convex_points.append(i)
 
-        convex_edges.append(createEdges(obstacle_table[a].convex_hull))
-
+        
         # tmp = createEdges(obstacle_table[a].convex_hull)
         # for i in tmp:
             # convex_edges.append(i)
@@ -360,12 +376,15 @@ def main():
                     x = Edge(one[0],one[1],two[0],two[1])
                     bl = True
                     for yn in range(num_of_obstacles):
-                        if yn is i or yn is j:
-                            l = 1
+                        same = False
+                        count = 0
+                        if yn == i or yn == j:
+                            same = True
                         for y in convex_edges[yn]:
                             if x.intersect(y):
                                 bl = False
-                                break
+                        # if count >= 2:
+                        #     bl = False
                     if bl:
                         dj_edges.append(x)
                         str1 = str(i)+str(on)
@@ -382,11 +401,11 @@ def main():
                         # print "x",x
 
 
-    # plotEdges(dj_edges,0)
+    plotEdges(dj_edges,0)
     # print "\n\n\n\nSecond"
     # printDict(node_dict)
     fini = dijkstra(node_dict)
-    plotEdges(fini,1)
+    # plotEdges(fini,1)
     # obstacle_table[0].o_print()
     plt.show()
     # obstacle_table[0].graham_scan()
