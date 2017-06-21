@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import sys, math
 from string import split
-from gopigo import *
-from control import *
+# from gopigo import *
+# from control import *
 import time
 
 R_DIM = (23,23) #example, robot that is 10cm x 10cm
@@ -311,7 +311,7 @@ def draw_rover(Starting_pos):
     temp_x.append(Starting_pos[0]-R_DIM[0])
     temp_y.append(Starting_pos[1])
     temp_x.append(Starting_pos[0]-R_DIM[0])
-    temp_y.append(Starting_pos[1]-R_DIM[0])
+    temp_y.append(Starting_pos[1]-R_DIM[1])
     temp_x.append(Starting_pos[0])
     temp_y.append(Starting_pos[1]-R_DIM[1])
     plt.plot(temp_x, temp_y, color='black', lw=1)
@@ -456,7 +456,7 @@ def main():
                         # print "x",x
 
     # print "obst",num_of_obstacles
-    # plotEdges(dj_edges,0)
+    plotEdges(dj_edges,0)
     # print "\n\n\n\nSecond"
     # printDict(node_dict)
     fini = dijkstra(node_dict)
@@ -465,45 +465,45 @@ def main():
     for ed in fini:
         ed.switch(pter)
         pter = ed.two
-    # plotEdges(fini,1)
+    plotEdges(fini,1)
     # for a in fini:
     #     print a
-    # plt.show()
+    plt.show()
 
-    set_speed(120)
-    t_orient = 90
-    fixed = False
-    dfixed = False
-    while len(fini) != 0:
-        temp = fini.pop(0)
-        orient = temp.orientation
-        dist = temp.distance
+    # set_speed(120)
+    # t_orient = 90
+    # fixed = False
+    # dfixed = False
+    # while len(fini) != 0:
+    #     temp = fini.pop(0)
+    #     orient = temp.orientation
+    #     dist = temp.distance
 
-        # set_speed(120)
-        if orient < t_orient:
-            if fixed:
+    #     # set_speed(120)
+    #     if orient < t_orient:
+    #         if fixed:
 
-                orient -= 15
-                dfixed = True
-            right_deg(t_orient-orient)
-        else:
-            orient += 18
-            if dfixed:
-                orient -= 15
-            fixed = True
-            left_deg(orient - t_orient)
-        t_orient = orient
-        time.sleep(1.)
-        # set_speed(180)
-        if fixed:
-            dist += 20
-        else:
-            dist += 10
-        fwd(dist)
-        while read_enc_status() != 0:
-            time.sleep(0.1)
-        stop()
-        time.sleep(0.4)
+    #             orient -= 15
+    #             dfixed = True
+    #         right_deg(t_orient-orient)
+    #     else:
+    #         orient += 18
+    #         if dfixed:
+    #             orient -= 15
+    #         fixed = True
+    #         left_deg(orient - t_orient)
+    #     t_orient = orient
+    #     time.sleep(1.)
+    #     # set_speed(180)
+    #     if fixed:
+    #         dist += 20
+    #     else:
+    #         dist += 10
+    #     fwd(dist)
+    #     while read_enc_status() != 0:
+    #         time.sleep(0.1)
+    #     stop()
+    #     time.sleep(0.4)
 
     # obstacle_table[0].graham_scan()
 
