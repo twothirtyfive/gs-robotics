@@ -157,10 +157,18 @@ def dijkstra(vdict):
     dij_edges.append(vdict["g"].edges[vdict["g"].prev_index])
     stt = vdict["g"].prev
     while vdict[stt].distance is not 0:
-        dij_edges.append(vdict[stt].edges[vdict[stt].prev_index])
+        dij_edges.insert(0,vdict[stt].edges[vdict[stt].prev_index])
         stt = vdict[stt].prev
     return dij_edges
 
+def myccw( p1, p2, p3):
+    temp = (p2[0]-p1[0])*(p3[1]-p1[1]) - (p2[1]-p1[1])*(p3[0]-p1[0])
+    if temp == 0.0:
+        return 0.0
+    elif temp > 0.0:
+        return 1.0
+    else:
+        return -1.0 
 
 class Node:
     def __init__( self, nm ):
@@ -201,14 +209,37 @@ class Edge:
         self.y = [ay,by]
         self.one = [ax,ay]
         self.two = [bx,by]
-        self.minx = min(self.x)
-        self.maxx = max(self.x)
-        self.miny = min(self.y)
-        self.maxy = max(self.y)
+        #error-prone
+        self.minx = min(self.x)-0.5
+        self.maxx = max(self.x)+0.5
+        self.miny = min(self.y)-0.5
+        self.maxy = max(self.y)+0.5
         self.dx = ax-bx
         self.dy = ay-by
         self.num = ax*by - ay*bx
         self.distance = math.sqrt( pow(ax-bx,2.0) + pow(ay-by,2) )
+        self.orientation = 0
+
+    def orient(self):
+        self.orientation = math.degrees(math.atan2(-1*self.dy,-1*self.dx))
+        print "orientation: ",self.orientation
+
+    def switch(self, premier):
+        if self.sx == premier[0] and self.sy == premier[1]:
+            self.orient()
+            return
+        else:
+            self.ex = self.sx
+            self.ey = self.sy
+            self.sx = premier[0]
+            self.sy = premier[1]
+            temp = self.two
+            self.two = self.one
+            self.one = temp
+            self.dx *= -1
+            self.dy *= -1
+            self.orient()
+
 
     def intersect(self, other):
         if self.sx==other.sx and self.sy==other.sy:
@@ -234,17 +265,28 @@ class Edge:
         px = (self.num*other.dx - self.dx*other.num)/base
         py = (self.num*other.dy - self.dy*other.num)/base
         
-        if ((self.minx < px < self.maxx) and (self.miny < py < self.maxy)) and ((other.minx < px < other.maxx) and (other.miny < py < other.maxy)):
-            print "hi"
-            return True
-        else:
-            print "\np",px,",",py
-            print "self",self.one,",",self.two
-            print self.minx,",",self.maxx,",",self.miny,",",self.maxy
-            print "other",other.one,",",other.two
-            print other.minx,",",other.maxx,",",other.miny,",",other.maxy
-            # print "0",self.one,self.two,other.one,other.two
-            return False
+        if self.minx <= px:
+            if px <= self.maxx:
+                if self.miny <= py:
+                    if py <= self.maxy:
+                        if other.minx <= px:
+                            if px <= other.maxx:
+                                if other.miny <= py:
+                                    if py <= other.maxy:
+                                        # print "hi"
+                                        # print "\np",px,",",py
+                                        # print "self",self.one,",",self.two
+                                        # print self.minx,",",self.maxx,",",self.miny,",",self.maxy
+                                        # print "other",other.one,",",other.two
+                                        # print other.minx,",",other.maxx,",",other.miny,",",other.maxy
+                                        return True
+        # print "\np",px,",",py
+        # print "self",self.one,",",self.two
+        # print self.minx,",",self.maxx,",",self.miny,",",self.maxy
+        # print "other",other.one,",",other.two
+        # print other.minx,",",other.maxx,",",other.miny,",",other.maxy
+        # print "0",self.one,self.two,other.one,other.two
+        return False
 
 def setup_env(input_table):
     start_coord = input_table.pop(0)
@@ -414,10 +456,15 @@ def main():
     plotEdges(dj_edges,0)
     # print "\n\n\n\nSecond"
     # printDict(node_dict)
-    # fini = dijkstra(node_dict)
-    # plotEdges(fini,1)
-    # obstacle_table[0].o_print()
+    fini = dijkstra(node_dict)
+    
+    pter = start
+    for ed in fini:
+        ed.switch(pter)
+        pter = ed.two
+    plotEdges(fini,1)
     plt.show()
+
     # obstacle_table[0].graham_scan()
 
 def printDict(dict):
