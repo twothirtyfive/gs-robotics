@@ -18,6 +18,9 @@ def main():
     print lower
     print upper
     f_image = color_in_image(original, [lower,upper])
+    detector = cv2.SimpleBlobDetector()
+    keypoints = detector.detect(f_image)
+    im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (255,255,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
 def myStats(cropped):
     mean,stdDv = cv2.meanStdDev(cropped)
