@@ -8,6 +8,7 @@ done = False
 kp_initial = []
 
 def main():
+    set_speed(80)
     queue = []
     camera = picamera.PiCamera()
     camera.capture('img.jpg')
@@ -18,58 +19,64 @@ def main():
     click_list = getXY(initial_img)
 
     cropped_hsv = crop_img(original, click_list, 'HSV')
-    cropped_rgb = crop_img(original, click_list, 'RGB')
+    # cropped_rgb = crop_img(original, click_list, 'RGB')
 
-    lower_hsv,upper_hsv = myStats(cropped_hsv)
-    lower_rgb, upper_rgb = myStats(cropped_rgb)
+    lower_hsv,upper_hsv = myStats(cropped_hsv, 'HSV')
+    # lower_rgb, upper_rgb = myStats(cropped_rgb, 'RGB')
 
     hsv_bw_image = color_in_image(original, [lower_hsv,upper_hsv], 'HSV')
-    rgb_bw_image = color_in_image(original, [lower_rgb,upper_rgb], 'RGB')
+    # rgb_bw_image = color_in_image(original, [lower_rgb,upper_rgb], 'RGB')
 
     cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-    cv2.imshow("image", np.hstack([rgb_bw_image, hsv_bw_image]))
+    cv2.imshow("image", hsv_bw_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows
 
-    keypoints = detect_blobs(rgb_bw_image, np.count_nonzero(rgb_bw_image))
+    hsv_bw_image = morph_ops(hsv_bw_image)
+
+    keypoints = detect_blobs(hsv_bw_image, np.count_nonzero(hsv_bw_image))
     global kp_initial
     kp_initial = find_biggest_blob(keypoints)
-    print "initial size: ",kp_initial.size
-    print "initial point: ", kp_initial.pt
     ins = decision(kp_initial)
     queue.append(ins)
 
     k = 0
-    while queue != []:
-        if read_enc_status() == 0:
-            instructions = queue.pop(0)
-            maneuver(instructions)
+    while True:
+
         camera.capture('img'+ str(k) + '.jpg')
         img = cv2.imread('img' + str(k) + '.jpg')
+        # time.sleep(0.05)
         hsv_bw_image = color_in_image(img, [lower_hsv,upper_hsv], 'HSV')
-        rgb_bw_image = color_in_image(img, [lower_rgb,upper_rgb], 'RGB')
-        # cv2.imshow("image", np.hstack([rgb_bw_image, hsv_bw_image]))
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows
+        # rgb_bw_image = color_in_image(img, [lower_rgb,upper_rgb], 'RGB')
 
-        print np.count_nonzero(hsv_bw_image)
+        hsv_bw_image = morph_ops(hsv_bw_image)
+
+        hsv_bw_image = cv2.cvtColor(hsv_bw_image, cv2.COLOR_GRAY2BGR)
+        # rgb_bw_image = cv2.cvtColor(rgb_bw_image, cv2.COLOR_GRAY2BGR)
+
+        # cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+        # cv2.imshow("image", np.hstack([img, hsv_bw_image]))
+        # cv2.waitKey(2000)
+        # cv2.destroyAllWindows()
+
+        hsv_bw_image = cv2.cvtColor(hsv_bw_image, cv2.COLOR_BGR2GRAY)
+        # rgb_bw_image = cv2.cvtColor(rgb_bw_image, cv2.COLOR_BGR2GRAY)
+
         bw_image = hsv_bw_image
-        if np.count_nonzero(hsv_bw_image) == 0:
-            bw_image = rgb_bw_image
-        keypoints = detect_blobs(rgb_bw_image, np.count_nonzero(bw_image))
+        keypoints = detect_blobs(bw_image, np.count_nonzero(bw_image))
 
         kp = []
         kp = find_biggest_blob(keypoints)
         print "size: ",kp.size
         print "point: ",kp.pt
         ins = decision(kp)
-        queue.append(ins)
 
+        maneuver(ins)
         k += 1
-        if not (70 <= kp.pt[0] <= 650):
-            ins = decision(kp)
-            queue.insert(0, ins)
-        print queue
+        # if not (70 <= kp.pt[0] <= 650):
+        #     ins = decision(kp)
+        #     queue.insert(0, ins)
+        print ins
 
     #image is 1920x1080
     # for k in keypoints:
@@ -77,27 +84,41 @@ def main():
     #     print "size: ",k.size
     #     print "angle: ", k.angle
 
+def morph_ops(hsv_bw_image):
+    kernel = np.ones((5,5), np.uint8)
+    hsv_erosion = cv2.erode(hsv_bw_image, kernel, iterations=1)
+    # rgb_erosion = cv2.erode(rgb_bw_image, kernel, iterations=1)
+
+    hsv_dilation = cv2.dilate(hsv_erosion,kernel,iterations = 1)
+    # rgb_dilation = cv2.dilate(rgb_erosion,kernel,iterations = 1)
+
+    hsv_closing = cv2.morphologyEx(hsv_dilation, cv2.MORPH_CLOSE, kernel)
+    # rgb_closing = cv2.morphologyEx(rgb_dilation, cv2.MORPH_CLOSE, kernel)
+
+    return hsv_closing
+
 def decision(kp):
     if kp == []:
         return 4,0
     x = kp.pt[0]
-    if not 300 <= x <= 420:
+    if not 260 <= x <= 460:
         if x < 300:
-            dif = (360-x)/12.
+            dif = (360-x)/18.
             return 0,dif
         else:
-            dif = (x-360)/12.
+            dif = (x-360)/18.
             return 1,dif
     else:
-        if kp.size < kp_initial.size:
+        ratio = kp.size/kp_initial.size
+        if ratio < 0.90:
             return 2,0
-        elif kp.size > kp_initial.size:
+        elif ratio > 1.1:
             return 3,0
         else:
             return 4,0
 
 def maneuver(instructions):
-    set_speed(40)
+    print "instructions: ",instructions
     if instructions[0] == 0:
         turn('left', instructions[1])
     elif instructions[0] == 1:
@@ -142,9 +163,13 @@ def detect_blobs(image, nz_count):
     return keypoints
 
 
-def myStats(cropped):
+def myStats(cropped, param):
     con = 3.0
+    if param == 'HSV':
+        con = 3.0
     mean,stdDv = cv2.meanStdDev(cropped)
+    print "min", cropped.min(axis=1).min(axis=0)
+    print "max", cropped.max(axis=1).max(axis=0)
     lower,upper = [],[]
     upper = mean + con*stdDv
     for m in range(3):
@@ -157,6 +182,8 @@ def myStats(cropped):
 
     low = [lower[0][0],lower[1][0],lower[2][0]]
     up = [upper[0][0],upper[1][0],upper[2][0]]
+    if param == 'HSV':
+        up[0] = 182
     return low,up
 
 
@@ -229,6 +256,9 @@ def color_in_image(image, boundary, param):
     lower = np.array(lower, dtype = "uint8")
     upper = np.array(upper, dtype = "uint8")
 
+    if param == 'HSV':
+        lower = np.array([lower[0], 0, 50])
+        upper = np.array([upper[0], 255, 255])
     print lower
     print upper
 
