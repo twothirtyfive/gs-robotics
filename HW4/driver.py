@@ -182,8 +182,6 @@ def myStats(cropped, param):
 
     low = [lower[0][0],lower[1][0],lower[2][0]]
     up = [upper[0][0],upper[1][0],upper[2][0]]
-    if param == 'HSV':
-        up[0] = 182
     return low,up
 
 
